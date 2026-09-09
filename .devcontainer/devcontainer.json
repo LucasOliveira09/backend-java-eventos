@@ -29,5 +29,5 @@
 
   "postCreateCommand": "/bin/bash .devcontainer/init-mysql.sh",
 
-  "postStartCommand": "service mysql start"
+  "postStartCommand": "/bin/bash .devcontainer/start-services.sh"
 }
