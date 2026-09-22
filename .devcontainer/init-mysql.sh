@@ -11,9 +11,9 @@ done
 mysql <<EOF
 CREATE DATABASE IF NOT EXISTS eventos;
 
-CREATE USER IF NOT EXISTS 'aluno'@'%' IDENTIFIED BY '123@Mudar';
+CREATE USER IF NOT EXISTS 'lucas'@'%' IDENTIFIED BY 'lucas@123';
 
-GRANT ALL PRIVILEGES ON eventos.* TO 'aluno'@'%';
+GRANT ALL PRIVILEGES ON eventos.* TO 'lucas'@'%';
 
 FLUSH PRIVILEGES;
 EOF
