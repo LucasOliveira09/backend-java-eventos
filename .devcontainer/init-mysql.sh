@@ -11,7 +11,7 @@ done
 mysql <<EOF
 CREATE DATABASE IF NOT EXISTS eventos;
 
-CREATE USER IF NOT EXISTS 'lucas'@'%' IDENTIFIED BY 'lucas@123';
+CREATE USER IF NOT EXISTS 'lucas'@'%' IDENTIFIED BY '123@Lucas';
 
 GRANT ALL PRIVILEGES ON eventos.* TO 'lucas'@'%';
 
