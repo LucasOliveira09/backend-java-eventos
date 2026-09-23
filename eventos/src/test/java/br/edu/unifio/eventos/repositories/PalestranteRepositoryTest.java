@@ -1,94 +1,90 @@
 package br.edu.unifio.eventos.repositories;
 
-import br.edu.unifio.eventos.entities.Palestrante;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
 
-@DataJpaTest
-class PalestranteRepositoryTest {
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
+
+import br.edu.unifio.eventos.entities.Palestrante;
+
+@SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class PalestranteRepositoryTest {
 
     @Autowired
     private PalestranteRepository palestranteRepository;
 
     @Test
-    @DisplayName("Deve inserir um palestrante com sucesso")
-    void deveInserirPalestrante() {
+    @Order(1)
+    public void deveBuscarTodosOsPalestrantes() {
+        List<Palestrante> palestrantes = palestranteRepository.findAll(Sort.by("nome"));
+
+        assertEquals(5, palestrantes.size());
+        assertEquals("Ana Paula Ferreira", palestrantes.get(0).getNome());
+        assertEquals("Carlos Eduardo Mendes", palestrantes.get(1).getNome());
+    }
+
+    @Test
+    @Order(2)
+    public void deveBuscarUmPalestrantePorId() {
+        Palestrante palestrante = palestranteRepository.findById(1).orElseThrow();
+
+        assertNotNull(palestrante);
+        assertEquals("Sergio Roberto Delfino", palestrante.getNome());
+    }
+
+    @Test
+    @Order(3)
+    public void deveSalvarUmPalestranteNovo() {
         Palestrante palestrante = new Palestrante();
-        palestrante.setNome("Carlos Mendes");
-        palestrante.setMiniBio("Especialista em Inteligência Artificial");
-        palestrante.setEmail("carlos.mendes@email.com");
+        palestrante.setNome("Lucas Oliveira");
+        palestrante.setMiniBio("Engenheiro de Software");
+        palestrante.setEmail("lucas@exemplo.com");
 
-        Palestrante salvo = palestranteRepository.save(palestrante);
-
-        Assertions.assertNotNull(salvo.getId());
-        Assertions.assertEquals("Carlos Mendes", salvo.getNome());
-        Assertions.assertEquals("carlos.mendes@email.com", salvo.getEmail());
-    }
-
-    @Test
-    @DisplayName("Deve buscar um palestrante por ID e validar seus atributos")
-    void deveBuscarPorId() {
-        Palestrante palestrante = palestranteRepository.save(
-            new Palestrante(null, "Ana Paula", "Arquiteta Cloud", "ana.paula@email.com")
-        );
-
-        Optional<Palestrante> resultado = palestranteRepository.findById(palestrante.getId());
-
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(palestrante.getId(), resultado.get().getId());
-        Assertions.assertEquals("Ana Paula", resultado.get().getNome());
-        Assertions.assertEquals("ana.paula@email.com", resultado.get().getEmail());
-    }
-
-    @Test
-    @DisplayName("Deve listar todos os palestrantes cadastrados")
-    void deveListarPalestrantes() {
-        palestranteRepository.save(new Palestrante(null, "Palestrante 1", "Bio 1", "p1@email.com"));
-        palestranteRepository.save(new Palestrante(null, "Palestrante 2", "Bio 2", "p2@email.com"));
-
-        List<Palestrante> lista = palestranteRepository.findAll();
-
-        Assertions.assertFalse(lista.isEmpty());
-        Assertions.assertTrue(lista.size() >= 2);
-    }
-
-    @Test
-    @DisplayName("Deve alterar um palestrante existente sem criar novo registro")
-    void deveAlterarPalestrante() {
-        Palestrante palestrante = palestranteRepository.save(
-            new Palestrante(null, "Nome Antigo", "Bio Antiga", "antigo@email.com")
-        );
-        Integer idOriginal = palestrante.getId();
-
-        palestrante.setNome("Nome Atualizado");
-        palestrante.setMiniBio("Bio Revisada");
         palestranteRepository.save(palestrante);
 
-        Optional<Palestrante> resultado = palestranteRepository.findById(idOriginal);
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(idOriginal, resultado.get().getId());
-        Assertions.assertEquals("Nome Atualizado", resultado.get().getNome());
-        Assertions.assertEquals("Bio Revisada", resultado.get().getMiniBio());
+        assertNotNull(palestrante.getId());
+        assertEquals(6, palestrante.getId());
     }
 
     @Test
-    @DisplayName("Deve excluir um palestrante pelo ID")
-    void deveExcluirPalestrante() {
-        Palestrante palestrante = palestranteRepository.save(
-            new Palestrante(null, "Para Excluir", "Bio", "excluir@email.com")
-        );
-        Integer id = palestrante.getId();
-        Assertions.assertTrue(palestranteRepository.findById(id).isPresent());
+    @Order(4)
+    public void deveExcluirUmPalestrantePorId() {
+        Palestrante palestrante = new Palestrante();
+        palestrante.setNome("Nome Teste");
+        palestrante.setMiniBio("Bio Teste");
+        palestrante.setEmail("teste@email.com");
 
-        palestranteRepository.deleteById(id);
+        palestranteRepository.save(palestrante);
 
-        Optional<Palestrante> resultado = palestranteRepository.findById(id);
-        Assertions.assertFalse(resultado.isPresent());
+        assertTrue(palestranteRepository.existsById(palestrante.getId()));
+        palestranteRepository.deleteById(palestrante.getId());
+        assertFalse(palestranteRepository.existsById(palestrante.getId()));
+    }
+
+    @Test
+    @Order(5)
+    public void deveAtualizarONomeDeUmPalestrante() {
+        Palestrante palestrante = new Palestrante();
+        palestrante.setNome("Nome Teste");
+        palestrante.setMiniBio("Bio Teste");
+        palestrante.setEmail("teste@email.com");
+
+        palestranteRepository.save(palestrante);
+
+        palestrante.setNome("Outro Nome Teste");
+        palestranteRepository.save(palestrante);
+
+        assertEquals("Outro Nome Teste", palestranteRepository.findById(palestrante.getId()).orElseThrow().getNome());
     }
 }

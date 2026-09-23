@@ -1,120 +1,115 @@
 package br.edu.unifio.eventos.repositories;
 
-import br.edu.unifio.eventos.entities.*;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
-@DataJpaTest
-class InscricaoRepositoryTest {
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 
-    @Autowired private InscricaoRepository inscricaoRepository;
-    @Autowired private EventoRepository eventoRepository;
-    @Autowired private ParticipanteRepository participanteRepository;
-    @Autowired private CategoriaRepository categoriaRepository;
-    @Autowired private LocalRepository localRepository;
-    @Autowired private PalestranteRepository palestranteRepository;
+import br.edu.unifio.eventos.entities.Evento;
+import br.edu.unifio.eventos.entities.Inscricao;
+import br.edu.unifio.eventos.entities.Participante;
 
-    private Evento eventoBase;
-    private Participante participanteBase;
+@SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class InscricaoRepositoryTest {
 
-    @BeforeEach
-    void setup() {
-        Categoria categoria = categoriaRepository.save(new Categoria(null, "Geral", "Eventos gerais"));
-        Local local = localRepository.save(new Local(null, "Sala 1", "Bloco A", 50));
-        Palestrante palestrante = palestranteRepository.save(new Palestrante(null, "Palestrante Base", "Bio", "p@email.com"));
+    @Autowired
+    private InscricaoRepository inscricaoRepository;
 
-        eventoBase = eventoRepository.save(new Evento(
-                null, "Evento Teste", "Descricao",
-                LocalDateTime.now(), LocalDateTime.now().plusHours(2),
-                50, "CONFIRMADO", categoria, local, palestrante
-        ));
+    @Autowired
+    private EventoRepository eventoRepository;
 
-        participanteBase = participanteRepository.save(
-                new Participante(null, "Participante Base", "aluno@email.com", "14999998888")
-        );
-    }
+    @Autowired
+    private ParticipanteRepository participanteRepository;
 
-    private Inscricao criarInscricao(String status) {
-        return new Inscricao(
-                null,
-                LocalDateTime.now(),
-                status,
-                eventoBase,
-                participanteBase
-        );
+    @Test
+    @Order(1)
+    public void deveBuscarTodasAsInscricoes() {
+        List<Inscricao> inscricoes = inscricaoRepository.findAll(Sort.by("id"));
+
+        assertEquals(5, inscricoes.size());
+        assertEquals("CONFIRMADA", inscricoes.get(0).getStatus());
+        assertEquals(1, inscricoes.get(0).getEvento().getId());
     }
 
     @Test
-    @DisplayName("Deve inserir uma inscrição associada a evento e participante")
-    void deveInserirInscricao() {
-        Inscricao inscricao = criarInscricao("CONFIRMADA");
+    @Order(2)
+    public void deveBuscarUmaInscricaoPorId() {
+        Inscricao inscricao = inscricaoRepository.findById(1).orElseThrow();
 
-        Inscricao salva = inscricaoRepository.save(inscricao);
-
-        Assertions.assertNotNull(salva.getId());
-        Assertions.assertEquals("CONFIRMADA", salva.getStatus());
-        Assertions.assertEquals(eventoBase.getId(), salva.getEvento().getId());
-        Assertions.assertEquals(participanteBase.getId(), salva.getParticipante().getId());
+        assertNotNull(inscricao);
+        assertEquals("CONFIRMADA", inscricao.getStatus());
+        assertEquals(1, inscricao.getParticipante().getId());
     }
 
     @Test
-    @DisplayName("Deve buscar inscrição por ID e validar seus atributos")
-    void deveBuscarPorId() {
-        Inscricao salva = inscricaoRepository.save(criarInscricao("CONFIRMADA"));
+    @Order(3)
+    public void deveSalvarUmaInscricaoNova() {
+        Inscricao inscricao = new Inscricao();
+        inscricao.setDataInscricao(LocalDateTime.now());
+        inscricao.setStatus("CONFIRMADA");
 
-        Optional<Inscricao> resultado = inscricaoRepository.findById(salva.getId());
+        Evento evento = eventoRepository.findById(1).orElseThrow();
+        Participante participante = participanteRepository.findById(1).orElseThrow();
 
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(salva.getId(), resultado.get().getId());
-        Assertions.assertEquals("CONFIRMADA", resultado.get().getStatus());
-        Assertions.assertNotNull(resultado.get().getDataInscricao());
+        inscricao.setEvento(evento);
+        inscricao.setParticipante(participante);
+
+        inscricaoRepository.save(inscricao);
+
+        assertNotNull(inscricao.getId());
+        assertEquals(6, inscricao.getId());
     }
 
     @Test
-    @DisplayName("Deve listar todas as inscrições cadastradas")
-    void deveListarInscricoes() {
-        inscricaoRepository.save(criarInscricao("CONFIRMADA"));
-        inscricaoRepository.save(criarInscricao("PENDENTE"));
+    @Order(4)
+    public void deveExcluirUmaInscricaoPorId() {
+        Inscricao inscricao = new Inscricao();
+        inscricao.setDataInscricao(LocalDateTime.now());
+        inscricao.setStatus("CANCELADA");
 
-        List<Inscricao> lista = inscricaoRepository.findAll();
+        Evento evento = eventoRepository.findById(1).orElseThrow();
+        Participante participante = participanteRepository.findById(1).orElseThrow();
 
-        Assertions.assertFalse(lista.isEmpty());
-        Assertions.assertTrue(lista.size() >= 2);
+        inscricao.setEvento(evento);
+        inscricao.setParticipante(participante);
+
+        inscricaoRepository.save(inscricao);
+
+        assertTrue(inscricaoRepository.existsById(inscricao.getId()));
+        inscricaoRepository.deleteById(inscricao.getId());
+        assertFalse(inscricaoRepository.existsById(inscricao.getId()));
     }
 
     @Test
-    @DisplayName("Deve alterar uma inscrição existente sem criar novo registro")
-    void deveAlterarInscricao() {
-        Inscricao salva = inscricaoRepository.save(criarInscricao("PENDENTE"));
-        Integer idOriginal = salva.getId();
+    @Order(5)
+    public void deveAtualizarOStatusDeUmaInscricao() {
+        Inscricao inscricao = new Inscricao();
+        inscricao.setDataInscricao(LocalDateTime.now());
+        inscricao.setStatus("PENDENTE");
 
-        salva.setStatus("CONFIRMADA");
-        inscricaoRepository.save(salva);
+        Evento evento = eventoRepository.findById(1).orElseThrow();
+        Participante participante = participanteRepository.findById(1).orElseThrow();
 
-        Optional<Inscricao> resultado = inscricaoRepository.findById(idOriginal);
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(idOriginal, resultado.get().getId());
-        Assertions.assertEquals("CONFIRMADA", resultado.get().getStatus());
-    }
+        inscricao.setEvento(evento);
+        inscricao.setParticipante(participante);
 
-    @Test
-    @DisplayName("Deve excluir uma inscrição pelo ID")
-    void deveExcluirInscricao() {
-        Inscricao salva = inscricaoRepository.save(criarInscricao("CANCELADA"));
-        Integer id = salva.getId();
-        Assertions.assertTrue(inscricaoRepository.findById(id).isPresent());
+        inscricaoRepository.save(inscricao);
 
-        inscricaoRepository.deleteById(id);
+        inscricao.setStatus("CONFIRMADA");
+        inscricaoRepository.save(inscricao);
 
-        Optional<Inscricao> resultado = inscricaoRepository.findById(id);
-        Assertions.assertFalse(resultado.isPresent());
+        assertEquals("CONFIRMADA", inscricaoRepository.findById(inscricao.getId()).orElseThrow().getStatus());
     }
 }

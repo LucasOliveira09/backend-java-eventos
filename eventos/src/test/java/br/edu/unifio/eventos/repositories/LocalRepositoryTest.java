@@ -1,94 +1,90 @@
 package br.edu.unifio.eventos.repositories;
 
-import br.edu.unifio.eventos.entities.Local;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
 
-@DataJpaTest
-class LocalRepositoryTest {
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
+
+import br.edu.unifio.eventos.entities.Local;
+
+@SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class LocalRepositoryTest {
 
     @Autowired
     private LocalRepository localRepository;
 
     @Test
-    @DisplayName("Deve inserir um local com sucesso")
-    void deveInserirLocal() {
+    @Order(1)
+    public void deveBuscarTodosOsLocais() {
+        List<Local> locais = localRepository.findAll(Sort.by("nome"));
+
+        assertEquals(5, locais.size());
+        assertEquals("Auditorio Principal UNIFIO", locais.get(0).getNome());
+        assertEquals("Centro de Convencoes Regional", locais.get(1).getNome());
+    }
+
+    @Test
+    @Order(2)
+    public void deveBuscarUmLocalPorId() {
+        Local local = localRepository.findById(1).orElseThrow();
+
+        assertNotNull(local);
+        assertEquals("Auditorio Principal UNIFIO", local.getNome());
+    }
+
+    @Test
+    @Order(3)
+    public void deveSalvarUmLocalNovo() {
         Local local = new Local();
-        local.setNome("Auditório Principal");
-        local.setEndereco("Bloco A - Campus");
-        local.setCapacidade(250);
+        local.setNome("Teatro Municipal");
+        local.setEndereco("Rua das Artes, 100");
+        local.setCapacidade(450);
 
-        Local salvo = localRepository.save(local);
-
-        Assertions.assertNotNull(salvo.getId());
-        Assertions.assertEquals("Auditório Principal", salvo.getNome());
-        Assertions.assertEquals(250, salvo.getCapacidade());
-    }
-
-    @Test
-    @DisplayName("Deve buscar um local por ID e validar seus atributos")
-    void deveBuscarPorId() {
-        Local local = new Local();
-        local.setNome("Laboratório 01");
-        local.setEndereco("Bloco B - Térreo");
-        local.setCapacidade(35);
-        Local salvo = localRepository.save(local);
-
-        Optional<Local> resultado = localRepository.findById(salvo.getId());
-
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(salvo.getId(), resultado.get().getId());
-        Assertions.assertEquals("Laboratório 01", resultado.get().getNome());
-        Assertions.assertEquals("Bloco B - Térreo", resultado.get().getEndereco());
-    }
-
-    @Test
-    @DisplayName("Deve listar todos os locais cadastrados")
-    void deveListarLocais() {
-        Local l1 = new Local(null, "Sala 101", "Bloco C", 40);
-        Local l2 = new Local(null, "Sala 102", "Bloco C", 45);
-        localRepository.save(l1);
-        localRepository.save(l2);
-
-        List<Local> lista = localRepository.findAll();
-
-        Assertions.assertFalse(lista.isEmpty());
-        Assertions.assertTrue(lista.size() >= 2);
-    }
-
-    @Test
-    @DisplayName("Deve alterar um local existente sem criar novo registro")
-    void deveAlterarLocal() {
-        Local local = localRepository.save(new Local(null, "Espaço Antigo", "Rua A", 50));
-        Integer idOriginal = local.getId();
-
-        local.setNome("Espaço Inovação");
-        local.setCapacidade(80);
         localRepository.save(local);
 
-        Optional<Local> resultado = localRepository.findById(idOriginal);
-        Assertions.assertTrue(resultado.isPresent());
-        Assertions.assertEquals(idOriginal, resultado.get().getId());
-        Assertions.assertEquals("Espaço Inovação", resultado.get().getNome());
-        Assertions.assertEquals(80, resultado.get().getCapacidade());
+        assertNotNull(local.getId());
+        assertEquals(6, local.getId());
     }
 
     @Test
-    @DisplayName("Deve excluir um local pelo ID")
-    void deveExcluirLocal() {
-        Local local = localRepository.save(new Local(null, "Sala Provisória", "Bloco D", 20));
-        Integer id = local.getId();
-        Assertions.assertTrue(localRepository.findById(id).isPresent());
+    @Order(4)
+    public void deveExcluirUmLocalPorId() {
+        Local local = new Local();
+        local.setNome("Nome Teste");
+        local.setEndereco("Endereco Teste");
+        local.setCapacidade(50);
 
-        localRepository.deleteById(id);
+        localRepository.save(local);
 
-        Optional<Local> resultado = localRepository.findById(id);
-        Assertions.assertFalse(resultado.isPresent());
+        assertTrue(localRepository.existsById(local.getId()));
+        localRepository.deleteById(local.getId());
+        assertFalse(localRepository.existsById(local.getId()));
+    }
+
+    @Test
+    @Order(5)
+    public void deveAtualizarONomeDeUmLocal() {
+        Local local = new Local();
+        local.setNome("Nome Teste");
+        local.setEndereco("Endereco Teste");
+        local.setCapacidade(50);
+
+        localRepository.save(local);
+
+        local.setNome("Outro Nome Teste");
+        localRepository.save(local);
+
+        assertEquals("Outro Nome Teste", localRepository.findById(local.getId()).orElseThrow().getNome());
     }
 }
